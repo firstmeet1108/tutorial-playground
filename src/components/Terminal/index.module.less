@@ -1,0 +1,81 @@
+.terminal {
+  background-color: #1e1e1e;
+  color: #cccccc;
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 14px;
+  padding: 8px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid #333333;
+}
+
+.terminalOutput {
+  flex: 1;
+  overflow: auto;
+  padding-bottom: 8px;
+}
+
+.commandLine {
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-top: 4px;
+}
+
+.prompt {
+  color: #0078d4;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.command {
+  color: #cccccc;
+}
+
+.output {
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #cccccc;
+  padding-left: 16px;
+}
+
+.errorOutput {
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: #f14c4c;
+  padding-left: 16px;
+}
+
+.inputLine {
+  display: flex;
+  align-items: center;
+}
+
+.terminalInput {
+  background-color: transparent;
+  color: #cccccc;
+  caret-color: #cccccc;
+  flex: 1;
+
+  &:focus {
+    box-shadow: none;
+  }
+
+  // 覆盖 antd 样式
+  :global {
+    .ant-input {
+      background-color: transparent;
+      color: #cccccc;
+
+      &:focus {
+        box-shadow: none;
+      }
+    }
+  }
+}
+
+.terminalSpinner {
+  margin-left: 16px;
+  display: flex;
+  align-items: center;
+}

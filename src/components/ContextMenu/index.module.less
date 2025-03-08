@@ -1,0 +1,52 @@
+.contextMenu {
+  position: fixed;
+  z-index: 1000;
+  background-color: #252526;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  min-width: 160px;
+  overflow: hidden;
+  user-select: none;
+
+  // 添加过渡动画
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.menu {
+  background-color: #252526;
+  border: 1px solid #3c3c3c;
+
+  :global {
+    .ant-menu {
+      background-color: transparent;
+    }
+
+    .ant-menu-item {
+      color: #cccccc;
+      height: 32px;
+      line-height: 32px;
+
+      &:hover {
+        background-color: #2a2d2e;
+      }
+
+      &.ant-menu-item-danger {
+        color: #ff4d4f;
+
+        &:hover {
+          background-color: rgba(255, 77, 79, 0.1);
+        }
+      }
+    }
+
+    .ant-menu-item-icon {
+      color: #cccccc;
+      margin-right: 8px;
+    }
+
+    .ant-menu-item-divider {
+      background-color: #3c3c3c;
+      margin: 4px 0;
+    }
+  }
+}

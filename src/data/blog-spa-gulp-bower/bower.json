@@ -1,0 +1,21 @@
+{
+  "name": "blog-spa-gulp-bower",
+  "description": "bower 示例",
+  "main": "",
+  "authors": [
+    "afly <afly@openxyz.com>"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/openxyz/web_front_code",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "^3.6.0",
+    "director": "^1.2.8"    
+  }
+}

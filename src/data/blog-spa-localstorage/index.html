@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>首页 - 博客</title>    
+    <script type="text/javascript" src="js/jquery.js"></script>    
+    <script type="text/javascript" src='js/ejs.js'></script>
+    <script type="text/javascript" src='js/director.js'></script>
+    <script type="text/javascript" src='js/main.js'></script>
+</head>
+
+<body>
+  <div> <a href="#/">首页</a></div>
+  <div id="main" > </div>
+
+  <script type="text/javascript">
+
+    // 客户端路由库，方便处理对hash的监听和解析 https://github.com/flatiron/director    
+    // https://www.cnblogs.com/Showshare/p/director-chinese-tutorial.html
+    var routes = {      
+      '/': home,
+      '/posts/new': posts_new,
+      '/posts/:id': posts_show,
+      '/posts/:id/edit': posts_edit,
+      '/posts/:id/delete': posts_delete
+    };
+
+    var router = Router(routes).configure({strict:false});
+    router.init();
+
+    //  `index.html#/posts/2`这样的客户端路由被分享或收藏时，也会触发载入首页，导致home()被执行 ，此处排除这种状况
+    if(location.hash == '' ){ home() }      
+    
+    function home(){
+      posts_index()      
+    }
+
+    function posts_index(){
+      renderTemplate('#main','post/index','posts')        
+    }
+
+    function posts_new(){
+      renderTemplate('#main','post/new','posts')  
+    }
+
+    function posts_show(id){      
+      renderTemplate('#main','post/show','posts',id) 
+    }
+
+    function posts_edit(id){
+      renderTemplate('#main','post/edit','posts',id) 
+    }
+
+    function posts_delete(id){      
+      //删除是危险操作，一般应提供一个删除表单，请用户确认是否删除。此处从简，留给同学们实现
+      //renderTemplate('#main','post/delete','posts',id)  
+      postDestroy(id)
+      posts_index()
+    }
+
+  </script>
+</body>
+</html>
+
+

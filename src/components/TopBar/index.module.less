@@ -1,0 +1,41 @@
+.topBar {
+  height: 40px;
+  background-color: #252526;
+  border-bottom: 1px solid #333333;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  user-select: none;
+  color: #cccccc;
+}
+
+.logo {
+  font-size: 16px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+
+  :global {
+    .anticon {
+      margin-right: 8px;
+      color: #0078d4;
+    }
+  }
+}
+
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+
+  :global {
+    .ant-btn {
+      color: #cccccc;
+
+      &:hover {
+        color: #ffffff;
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "devDependencies": {
+    "gulp": "^4.0.2",
+    "gulp-concat": "^2.6.1",
+    "gulp-main-bower-files": "^1.8.2",
+    "gulp-merge": "^0.1.1",
+    "gulp-uglify": "^3.0.2",
+    "merge-stream": "^2.0.0"
+  }
+}
