@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { ConfigProvider, theme } from 'antd'
 import HomePage from './pages/HomePage'
 import './styles/darkTheme.less'
-import { initWebContainer } from '@/utils/webContainerUtils'
+import { getWebContainer } from '@/utils/webContainerUtils'
 
 const App: React.FC = () => {
   const [isCrossOriginIsolated, setIsCrossOriginIsolated] = useState(
@@ -117,8 +117,11 @@ const App: React.FC = () => {
   useEffect(() => {
     const preInit = async () => {
       try {
-        await initWebContainer()
-        console.log('WebContainer 预初始化成功')
+        const webContainer = await getWebContainer()
+        const fs = webContainer?.fs
+        const dir = await fs?.readdir('/')
+        console.log('dir', dir)
+        console.log('WebContainer 预初始化成功', webContainer)
       } catch (error) {
         console.warn('WebContainer 预初始化失败:', error)
       }
@@ -138,11 +141,7 @@ const App: React.FC = () => {
     }
   }, [isCrossOriginIsolated])
 
-  return (
-    <ConfigProvider theme={darkTheme}>
-      <HomePage />
-    </ConfigProvider>
-  )
+  return <ConfigProvider theme={darkTheme}>{/* <HomePage /> */}</ConfigProvider>
 }
 
 export default App

@@ -717,10 +717,10 @@
   dependencies:
     "@swc/core" "^1.7.26"
 
-"@webcontainer/api@^1.5.1-internal.8":
-  version "1.5.1-internal.8"
-  resolved "https://registry.yarnpkg.com/@webcontainer/api/-/api-1.5.1-internal.8.tgz#923b5c99f5e1440e0b7551831981f0e5ae9efce1"
-  integrity sha512-EgtnRLOIFhBiTS/1nQmg3A6RtQXvp+kDK08cbEZZpnXGyaNd1y9dSCJUEn3OUCuHSEZr3LeqBtwR5mYOxFeiUQ==
+"@webcontainer/api@^1.1.8":
+  version "1.5.1"
+  resolved "https://registry.yarnpkg.com/@webcontainer/api/-/api-1.5.1.tgz#e6d9be74d9becc5afdeefcb422fa595c2b4a4b34"
+  integrity sha512-+ELk+TbTOUx0LawAUdB+nnxaofg/FxUXo/Ac/+CzHSP3SOc3ebBAW3fLo4UZfvJdUW+ygWZOiQMthPLQXvKZEg==
 
 acorn-jsx@^5.3.2:
   version "5.3.2"

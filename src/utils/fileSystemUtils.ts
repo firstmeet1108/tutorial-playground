@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import type { TreeDataNode } from 'antd'
 import { message } from 'antd'
-import { mountFilesToWebContainer } from './webContainerUtils'
 import { initializeWebContainerFromFileSystem } from './webContainerUtils'
 
 // 文件类型枚举
@@ -366,54 +365,42 @@ export function useFileSystem() {
     })
   }
 
-  // 根据key获取文件内容
-  const getFileContentByKey = (key: string): FileInfo => {
-    console.log('获取文件内容，key:', key)
+  // 获取文件内容
+  const getFileContentByKey = (
+    key: string,
+    treeData: TreeDataNode[],
+    fileContents: Record<string, string>
+  ) => {
+    console.log('获取文件内容:', key)
 
-    // 查找对应的节点
+    // 查找节点
     const node = findNodeByKey(treeData, key)
     console.log('找到节点:', node)
 
-    if (!node || !node.data) {
-      console.warn(`未找到节点: ${key}`)
+    if (!node || !node.isLeaf) {
+      console.warn(`未找到节点或节点不是文件: ${key}`)
       return {
         name: key.split('-').pop() || key,
-        path: key,
-        type: FileType.UNKNOWN,
-        content: '// 文件内容未找到'
+        content: '',
+        language: 'plaintext'
       }
     }
 
-    const file = node.data as File
-    const path = file.webkitRelativePath || file.name
+    // 获取文件路径
+    // @ts-ignore - 使用自定义属性
+    const file = node.fileObj as File
+    const path = file
+      ? file.webkitRelativePath || file.name
+      : String(node.title)
     console.log('文件路径:', path)
 
-    // 检查是否有缓存的内容
-    if (!fileContents[path]) {
-      console.warn(`未找到文件内容: ${path}，尝试读取文件...`)
-      // 尝试立即读取文件内容
-      readFileAsText(file)
-        .then((content) => {
-          console.log(`动态读取文件内容成功: ${path}`)
-          setFileContents((prev) => ({
-            ...prev,
-            [path]: content
-          }))
-        })
-        .catch((error) => {
-          console.error(`动态读取文件内容失败: ${path}`, error)
-        })
-    }
-
-    const content = fileContents[path] || '// 正在加载文件内容...'
+    // 获取文件内容
+    const content = fileContents[path] || ''
 
     return {
-      name: file.name,
-      path,
-      type: getFileType(file.name),
+      name: String(node.title),
       content,
-      size: file.size,
-      lastModified: new Date(file.lastModified)
+      language: getLanguageMode(String(node.title))
     }
   }
 
@@ -681,7 +668,7 @@ export function useFileSystem() {
     }
 
     // 不能粘贴到自身的子节点
-    if (isChildOf(targetNode, sourceNode.key)) {
+    if (isChildOf(targetNode, String(sourceNode.key))) {
       message.error('不能粘贴到自身的子节点')
       return
     }
@@ -689,10 +676,30 @@ export function useFileSystem() {
     // 根据源节点类型执行不同的粘贴操作
     if (clipboard.isLeaf) {
       // 粘贴文件
-      pasteFile(sourceNode, targetNode, clipboard.isCut)
+      pasteFile(
+        sourceNode,
+        targetNode,
+        clipboard.isCut,
+        treeData,
+        files,
+        fileContents,
+        setTreeData,
+        setFiles,
+        setFileContents
+      )
     } else {
       // 粘贴文件夹
-      pasteFolder(sourceNode, targetNode, clipboard.isCut)
+      pasteFolder(
+        sourceNode,
+        targetNode,
+        clipboard.isCut,
+        treeData,
+        files,
+        fileContents,
+        setTreeData,
+        setFiles,
+        setFileContents
+      )
     }
 
     // 如果是剪切操作，粘贴后清空剪贴板
@@ -707,7 +714,8 @@ export function useFileSystem() {
 
   // 检查节点是否是指定节点的子节点
   const isChildOf = (node: TreeDataNode, parentKey: string): boolean => {
-    if (node.key === parentKey) {
+    const nodeKey = String(node.key)
+    if (nodeKey === parentKey) {
       return true
     }
 
@@ -726,130 +734,142 @@ export function useFileSystem() {
   const pasteFile = (
     sourceNode: TreeDataNode,
     targetNode: TreeDataNode,
-    isCut: boolean
+    isCut: boolean,
+    treeData: TreeDataNode[],
+    files: File[],
+    fileContents: Record<string, string>,
+    setTreeData: React.Dispatch<React.SetStateAction<TreeDataNode[]>>,
+    setFiles: React.Dispatch<React.SetStateAction<File[]>>,
+    setFileContents: React.Dispatch<
+      React.SetStateAction<Record<string, string>>
+    >
   ) => {
+    // 将 key 转换为字符串
+    const sourceKey = String(sourceNode.key)
+    const targetKey = String(targetNode.key)
+
+    // 不能粘贴到自身的子节点
+    if (isChildOf(targetNode, sourceKey)) {
+      message.error('不能粘贴到自身的子节点')
+      return
+    }
+
     // 查找源文件
     const sourceFileIndex = files.findIndex((file) => {
       const filePath = file.webkitRelativePath || file.name
-      return sourceNode.key.includes(filePath)
+      return sourceKey.includes(filePath)
     })
 
     if (sourceFileIndex === -1) {
-      message.error('源文件不存在')
+      message.error('未找到源文件')
       return
     }
 
     const sourceFile = files[sourceFileIndex]
-    const sourceFileName = sourceFile.name
-    const sourcePath = sourceFile.webkitRelativePath || sourceFile.name
+    const sourceFilePath = sourceFile.webkitRelativePath || sourceFile.name
 
     // 构建目标路径
-    let targetPath = ''
-    if (targetNode.key === 'root') {
-      targetPath = sourceFileName
+    let targetFilePath = ''
+
+    if (targetKey === 'root') {
+      // 如果目标是根目录，直接使用文件名
+      targetFilePath = sourceFilePath.split('/').pop() || sourceFilePath
     } else {
       // 从目标节点的 key 中提取路径
-      const targetNodePath = getPathFromKey(targetNode.key)
+      const targetNodePath = getPathFromKey(String(targetNode.key))
 
       // 如果目标是文件夹，则放在文件夹内
       if (!targetNode.isLeaf) {
-        targetPath = `${targetNodePath}/${sourceFileName}`
+        targetFilePath = `${targetNodePath}/${sourceFilePath.split('/').pop()}`
       } else {
         // 如果目标是文件，则放在同级目录
-        const lastSlashIndex = targetNodePath.lastIndexOf('/')
-        const targetDir =
-          lastSlashIndex !== -1
-            ? targetNodePath.substring(0, lastSlashIndex)
-            : ''
-        targetPath = targetDir
-          ? `${targetDir}/${sourceFileName}`
-          : sourceFileName
+        const targetDir = targetNodePath.split('/').slice(0, -1).join('/')
+        targetFilePath = targetDir
+          ? `${targetDir}/${sourceFilePath.split('/').pop()}`
+          : sourceFilePath.split('/').pop() || ''
       }
     }
 
     // 检查目标路径是否已存在同名文件
     const existingFile = files.some((file) => {
       const filePath = file.webkitRelativePath || file.name
-      return filePath === targetPath && filePath !== sourcePath
+      return filePath === targetFilePath
     })
 
-    // 如果存在同名文件，添加后缀
     if (existingFile) {
-      const lastDotIndex = sourceFileName.lastIndexOf('.')
-      const extension =
-        lastDotIndex !== -1 ? sourceFileName.substring(lastDotIndex) : ''
-      const nameWithoutExtension =
-        lastDotIndex !== -1
-          ? sourceFileName.substring(0, lastDotIndex)
-          : sourceFileName
-
-      // 从目标节点的 key 中提取路径
-      const targetNodePath =
-        targetNode.key === 'root' ? '' : getPathFromKey(targetNode.key)
-
-      // 如果目标是文件夹，则放在文件夹内
-      if (targetNode.key === 'root' || !targetNode.isLeaf) {
-        targetPath = targetNodePath
-          ? `${targetNodePath}/${nameWithoutExtension} - 副本${extension}`
-          : `${nameWithoutExtension} - 副本${extension}`
-      } else {
-        // 如果目标是文件，则放在同级目录
-        const lastSlashIndex = targetNodePath.lastIndexOf('/')
-        const targetDir =
-          lastSlashIndex !== -1
-            ? targetNodePath.substring(0, lastSlashIndex)
-            : ''
-        targetPath = targetDir
-          ? `${targetDir}/${nameWithoutExtension} - 副本${extension}`
-          : `${nameWithoutExtension} - 副本${extension}`
-      }
+      message.error(
+        `目标位置已存在同名文件: ${targetFilePath.split('/').pop()}`
+      )
+      return
     }
 
     // 复制文件内容
-    if (fileContents[sourcePath]) {
-      fileContents[targetPath] = fileContents[sourcePath]
-    }
+    const sourceContent = fileContents[sourceFilePath] || ''
+    const newContents = { ...fileContents, [targetFilePath]: sourceContent }
 
     // 创建新的文件对象
-    const newFile = new File([sourceFile], targetPath.split('/').pop() || '', {
-      type: sourceFile.type,
-      lastModified: Date.now()
-    })
-
-    // 设置 webkitRelativePath 属性
-    Object.defineProperty(newFile, 'webkitRelativePath', {
-      value: targetPath,
-      writable: false
-    })
+    const newFile = new File(
+      [sourceFile],
+      targetFilePath.split('/').pop() || '',
+      {
+        type: sourceFile.type,
+        lastModified: Date.now()
+      }
+    )
 
     // 更新文件列表
-    let newFiles = [...files]
-
-    // 如果是剪切操作，删除源文件
+    const newFiles = [...files]
     if (isCut) {
+      // 如果是剪切操作，删除源文件
       newFiles.splice(sourceFileIndex, 1)
-      delete fileContents[sourcePath]
+      delete newContents[sourceFilePath]
     }
-
-    // 添加新文件
     newFiles.push(newFile)
-    setFiles(newFiles)
 
     // 更新树形结构
-    const newTreeData = filesToTreeData(newFiles)
-    setTreeData(newTreeData)
+    const newTreeData = [...treeData]
+    if (isCut) {
+      // 如果是剪切操作，删除源节点
+      deleteNodeByKey(newTreeData, String(sourceNode.key))
+    }
 
-    message.success(isCut ? '已移动文件' : '已复制文件')
+    // 添加新节点
+    buildTreeFromPath(newTreeData, targetFilePath, newFile)
+
+    // 更新状态
+    setTreeData(newTreeData)
+    setFiles(newFiles)
+    setFileContents(newContents)
+
+    // 更新 WebContainer 文件系统
+    initializeWebContainerFromFileSystem(newTreeData, newContents)
+      .then(() => {
+        message.success(`已${isCut ? '移动' : '复制'}文件到 ${targetFilePath}`)
+      })
+      .catch((error) => {
+        console.error('更新 WebContainer 文件系统失败:', error)
+        message.error(
+          `${isCut ? '移动' : '复制'}文件成功，但未能同步到终端环境`
+        )
+      })
   }
 
   // 粘贴文件夹
   const pasteFolder = (
     sourceNode: TreeDataNode,
     targetNode: TreeDataNode,
-    isCut: boolean
+    isCut: boolean,
+    treeData: TreeDataNode[],
+    files: File[],
+    fileContents: Record<string, string>,
+    setTreeData: React.Dispatch<React.SetStateAction<TreeDataNode[]>>,
+    setFiles: React.Dispatch<React.SetStateAction<File[]>>,
+    setFileContents: React.Dispatch<
+      React.SetStateAction<Record<string, string>>
+    >
   ) => {
     // 获取源文件夹路径
-    const sourceFolderPath = getPathFromKey(sourceNode.key)
+    const sourceFolderPath = getPathFromKey(String(sourceNode.key))
     const sourceFolderName = sourceFolderPath.split('/').pop() || ''
 
     // 构建目标基础路径
@@ -858,7 +878,7 @@ export function useFileSystem() {
       targetBasePath = sourceFolderName
     } else {
       // 从目标节点的 key 中提取路径
-      const targetNodePath = getPathFromKey(targetNode.key)
+      const targetNodePath = getPathFromKey(String(targetNode.key))
 
       // 如果目标是文件夹，则放在文件夹内
       if (!targetNode.isLeaf) {
@@ -878,7 +898,7 @@ export function useFileSystem() {
 
     // 检查目标路径是否已存在同名文件夹
     const existingFolder = treeData.some((node) => {
-      if (!node.isLeaf && getPathFromKey(node.key) === targetBasePath) {
+      if (!node.isLeaf && getPathFromKey(String(node.key)) === targetBasePath) {
         return true
       }
       return false
@@ -900,7 +920,7 @@ export function useFileSystem() {
       if (isCut) {
         // 如果是剪切操作，删除源文件夹
         const newTreeData = [...treeData]
-        deleteNodeByKey(newTreeData, sourceNode.key)
+        deleteNodeByKey(newTreeData, String(sourceNode.key))
         setTreeData(newTreeData)
       }
 
@@ -918,7 +938,7 @@ export function useFileSystem() {
       } else {
         // 递归添加到目标节点
         const newTreeData = [...treeData]
-        addChildToNode(newTreeData, targetNode.key, emptyFolderNode)
+        addChildToNode(newTreeData, String(targetNode.key), emptyFolderNode)
         setTreeData(newTreeData)
       }
     } else {
@@ -991,7 +1011,7 @@ export function useFileSystem() {
   // 从树形结构中删除节点
   const deleteNodeByKey = (nodes: TreeDataNode[], key: string): boolean => {
     for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].key === key) {
+      if (String(nodes[i].key) === key) {
         nodes.splice(i, 1)
         return true
       }
@@ -1008,11 +1028,11 @@ export function useFileSystem() {
   const getPathFromKey = (key: string): string => {
     // 尝试从 key 中提取路径
     // 通常 key 的格式是 "folder-{timestamp}-{path}" 或 "file-{timestamp}-{path}"
-    const parts = key.split('-')
+    const parts = String(key).split('-')
     if (parts.length >= 3) {
       return parts.slice(2).join('-')
     }
-    return key
+    return String(key)
   }
 
   // 递归添加子节点
@@ -1022,7 +1042,7 @@ export function useFileSystem() {
     childNode: TreeDataNode
   ): boolean => {
     for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].key === targetKey) {
+      if (String(nodes[i].key) === targetKey) {
         if (!nodes[i].children) {
           nodes[i].children = []
         }
@@ -1052,7 +1072,7 @@ export function useFileSystem() {
 
     // 检查是否已存在同名文件夹
     const existingFolder = treeData.some((node) => {
-      if (!node.isLeaf && getPathFromKey(node.key) === folderPath) {
+      if (!node.isLeaf && getPathFromKey(String(node.key)) === folderPath) {
         return true
       }
       return false
@@ -1258,12 +1278,20 @@ export function buildTreeFromPath(
     // 检查文件是否已存在
     const existingFile = currentLevel.find((node) => node.title === fileName)
     if (!existingFile) {
-      currentLevel.push({
+      // 创建新的文件节点，使用自定义属性存储文件对象
+      const newNode: TreeDataNode = {
         title: fileName,
         key: nodeKey,
-        isLeaf: true,
-        data: file
-      })
+        isLeaf: true
+      }
+
+      // 使用非标准属性存储文件对象
+      if (file) {
+        // @ts-ignore - 添加自定义属性
+        newNode.fileObj = file
+      }
+
+      currentLevel.push(newNode)
     }
   }
 
@@ -1304,9 +1332,6 @@ export const handleFileUpload = async (
   setTreeData: React.Dispatch<React.SetStateAction<TreeDataNode[]>>,
   setFileContents: React.Dispatch<React.SetStateAction<Record<string, string>>>
 ) => {
-  // 导入 buildTreeFromPath 函数
-  const { buildTreeFromPath } = require('./fileSystemUtils')
-
   if (!files || files.length === 0) {
     message.warning('未选择任何文件')
     return

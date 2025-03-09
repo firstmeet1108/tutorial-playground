@@ -190,7 +190,6 @@ ${lsResult.output}
 
       // 尝试执行文件系统命令
       const result = await executeFileSystemCommand(command, args.slice(1))
-
       if (result) {
         // 是文件系统命令，显示结果
         setHistory((prev) => [
@@ -409,100 +408,6 @@ ${lsResult.output}
     inputRef.current?.focus()
   }
 
-  // 添加文件系统操作命令
-  const executeFileSystemCommand = async (cmd: string, args: string[]) => {
-    const webcontainer = getWebContainer()
-
-    // 如果 WebContainer 不可用，返回 null
-    if (!webcontainer) {
-      return null
-    }
-
-    switch (cmd) {
-      case 'ls':
-        try {
-          const path = args[0] || '.'
-          const entries = await webcontainer.fs.readdir(path, {
-            withFileTypes: true
-          })
-
-          let output = ''
-          for (const entry of entries) {
-            const isDir = entry.isDirectory()
-            output += `${isDir ? 'd ' : '- '} ${entry.name}${
-              isDir ? '/' : ''
-            }\n`
-          }
-
-          return { output, isError: false }
-        } catch (error) {
-          return {
-            output: `ls: 无法访问 '${args[0] || '.'}': ${error}`,
-            isError: true
-          }
-        }
-
-      case 'cat':
-        try {
-          if (!args[0]) {
-            return { output: 'cat: 缺少文件操作数', isError: true }
-          }
-
-          const content = await webcontainer.fs.readFile(args[0], 'utf-8')
-          return { output: content, isError: false }
-        } catch (error) {
-          return {
-            output: `cat: ${args[0]}: ${error}`,
-            isError: true
-          }
-        }
-
-      case 'mkdir':
-        try {
-          if (!args[0]) {
-            return { output: 'mkdir: 缺少操作数', isError: true }
-          }
-
-          await webcontainer.fs.mkdir(args[0])
-          return { output: '', isError: false }
-        } catch (error) {
-          return {
-            output: `mkdir: 无法创建目录 '${args[0]}': ${error}`,
-            isError: true
-          }
-        }
-
-      case 'rm':
-        try {
-          if (!args[0]) {
-            return { output: 'rm: 缺少操作数', isError: true }
-          }
-
-          const isRecursive = args.includes('-r') || args.includes('-rf')
-
-          if (isRecursive) {
-            // 过滤掉选项参数
-            const paths = args.filter((arg) => !arg.startsWith('-'))
-            for (const path of paths) {
-              await webcontainer.fs.rm(path, { recursive: true })
-            }
-          } else {
-            await webcontainer.fs.rm(args[0])
-          }
-
-          return { output: '', isError: false }
-        } catch (error) {
-          return {
-            output: `rm: 无法删除 '${args[0]}': ${error}`,
-            isError: true
-          }
-        }
-
-      default:
-        return null // 不是文件系统命令
-    }
-  }
-
   return (
     <div className={styles.terminal} style={{ height }} onClick={focusInput}>
       <div className={styles.terminalOutput} ref={terminalRef}>
@@ -540,7 +445,6 @@ ${lsResult.output}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              bordered={false}
               autoFocus
               disabled={!isReady}
             />

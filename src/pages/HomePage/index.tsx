@@ -6,7 +6,6 @@ import {
   Empty,
   message,
   theme,
-  Menu,
   Modal,
   Form,
   Input,
@@ -16,11 +15,7 @@ import {
 import type { MenuProps } from 'antd'
 import FileExplorer, { FileExplorerRef } from '@/components/FileExplorer'
 import FileUploader from '@/components/FileUploader'
-import {
-  useFileSystem,
-  getLanguageMode,
-  FileType
-} from '@/utils/fileSystemUtils'
+import { useFileSystem, getLanguageMode } from '@/utils/fileSystemUtils'
 import {
   ScissorOutlined,
   SnippetsOutlined,
