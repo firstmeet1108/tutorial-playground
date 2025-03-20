@@ -1,8 +1,7 @@
 export const initFiles = {
   'package.json': {
     file: {
-      contents: `
-{
+      contents: `{
   "name": "vite-starter",
   "private": true,
   "version": "0.0.0",
@@ -22,8 +21,7 @@ export const initFiles = {
   },
   'index.html': {
     file: {
-      contents: `
-<html lang="en">
+      contents: `<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
@@ -39,8 +37,7 @@ export const initFiles = {
   },
   'vite.config.js': {
     file: {
-      contents: `
-import { defineConfig } from 'vite'
+      contents: `import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
@@ -53,20 +50,19 @@ export default defineConfig({
     directory: {
       'main.js': {
         file: {
-          contents: `
-            import { createApp } from 'vue'
-            import App from './App.vue'
+          contents: 
+`import { createApp } from 'vue'
+import App from './App.vue'
 
-            createApp(App).mount('#app')
+createApp(App).mount('#app')
           `
         }
       },
       'App.vue': {
         file: {
-          contents: `
-            <template>
-              <h1>Hello World</h1>
-            </template>
+          contents: `<template>
+  <h1>Hello World</h1>
+</template>
           `
         }
       }

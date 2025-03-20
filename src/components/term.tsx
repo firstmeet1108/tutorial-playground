@@ -19,12 +19,6 @@ const Term: React.FC<TermProps> = ({ show, onToggle, className, style }) => {
   useEffect(() => {
     if (!show) return;
 
-    // 如果没有标签页，创建一个
-    if (tabs.length === 0) {
-      generateShell();
-      return;
-    }
-
     const activeTab = tabs[activeTabIndex];
     if (!activeTab || !activeTab.terminal) return;
 

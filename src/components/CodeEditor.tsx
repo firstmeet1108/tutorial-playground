@@ -54,7 +54,7 @@ const darkThemeStyles = `
 const CodeEditor: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [fileContent, setFileContent] = useState<string>('// 选择一个文件开始编辑');
-  const [showTerminal, setShowTerminal] = useState<boolean>(true);
+  const [showTerminal, setShowTerminal] = useState<boolean>(false);
   const [showPreview, setShowPreview] = useState<boolean>(false);
   const [previewUrl, setPreviewUrl] = useState<string>('about:blank');
   const { files, currentPath } = useFileSystem({
